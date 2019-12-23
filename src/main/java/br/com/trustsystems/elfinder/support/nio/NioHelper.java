@@ -162,7 +162,7 @@ public final class NioHelper {
      * @return the name of the file or directory.
      */
     public static String getName(Path path) {
-        return path.getFileName().toString();
+        return path.getFileName() == null ? "" : path.getFileName().toString();
     }
 
     /**

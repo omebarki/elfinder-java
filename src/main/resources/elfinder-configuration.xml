@@ -9,7 +9,7 @@
     <volume>
         <source>filesystem</source>
         <alias>/</alias>
-        <path>F:\dev_workspace</path>
+        <path>/</path>
         <locale>en_US</locale>
         <constraint>
             <locked>false</locked>
