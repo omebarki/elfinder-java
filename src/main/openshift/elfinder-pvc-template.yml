@@ -1,0 +1,153 @@
+---
+#oc import-image @project.artifactId@:@project.version@ --from=@docker.remote.registry@/@project.artifactId@:@project.version@ --confirm --insecure
+apiVersion: v1
+kind: Template
+labels:
+  app: elfinder
+  template: elfinder-template
+metadata:
+  annotations:
+    description: |-
+      Elfindder PVC Web Explorer
+    iconClass: "fa fa-internet-explorer"
+    openshift.io/display-name: PVC Web Explorer
+    tags: instant-app,elfinder
+  name: elfinder
+objects:
+
+  - apiVersion: v1
+    kind: Route
+    metadata:
+      annotations:
+        haproxy.router.openshift.io/timeout: 4m
+        template.openshift.io/expose-uri: http://{.spec.host}{.spec.path}
+      name: "${ELF_WEB_SERVICE_NAME}"
+    spec:
+      tls:
+        insecureEdgeTerminationPolicy: Redirect
+        termination: edge
+      to:
+        kind: Service
+        name: "${ELF_WEB_SERVICE_NAME}"
+
+  - apiVersion: v1
+    kind: DeploymentConfig
+    metadata:
+      annotations:
+        template.alpha.openshift.io/wait-for-ready: 'true'
+      name: "${ELF_SERVICE_NAME}"
+    spec:
+      replicas: 1
+      selector:
+        name: "${ELF_SERVICE_NAME}"
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            name: "${ELF_SERVICE_NAME}"
+        spec:
+          containers:
+            - capabilities: {}
+              env:
+                - name: WEB_PORT
+                  value: "${WEB_PORT}"
+                - name: UI_LOGIN
+                  value: "${UI_LOGIN}"
+                - name: UI_PASSWORD
+                  value: "${UI_PASSWORD}"
+              image: " "
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 2
+                tcpSocket:
+                  port: ${{WEB_PORT}}
+                initialDelaySeconds: 420
+                periodSeconds: 360
+                timeoutSeconds: 240
+              name: elfinder
+              readinessProbe:
+                tcpSocket:
+                  port: ${{WEB_PORT}}
+                initialDelaySeconds: 5
+                timeoutSeconds: 240
+              resources:
+                limits:
+                  memory: "${MEMORY_LIMIT}"
+                  cpu: 900m
+              securityContext:
+                capabilities: {}
+                privileged: false
+              terminationMessagePath: "/dev/termination-log"
+              volumeMounts:
+                - mountPath: "/PVC_DATA"
+                  name: "${ELF_SERVICE_NAME}-data"
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          volumes:
+            - name: "${ELF_SERVICE_NAME}-data"
+              persistentVolumeClaim:
+                claimName: "${PVC_NAME}"
+      triggers:
+        - imageChangeParams:
+            automatic: true
+            containerNames:
+              - elfinder
+            from:
+              kind: ImageStreamTag
+              name: "${ELF_IMAGE_STREAM_TAG}"
+            lastTriggeredImage: ''
+          type: ImageChange
+        - type: ConfigChange
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        service.openshift.io/infrastructure: 'true'
+      name: "${ELF_WEB_SERVICE_NAME}"
+    spec:
+      ports:
+        - name: web
+          nodePort: 0
+          port: ${{WEB_PORT}}
+          protocol: TCP
+          targetPort: ${{WEB_PORT}}
+      selector:
+        name: "${ELF_SERVICE_NAME}"
+      sessionAffinity: None
+      type: ClusterIP
+
+parameters:
+  - description: Le nom du PVC.
+    displayName: Nom du PVC
+    name: PVC_NAME
+    value: yki-pvc
+  - description: The name of the OpenShift Service exposed for the WEB Explorer.
+    displayName: H2 Service Name
+    name: ELF_SERVICE_NAME
+    value: elfinder-service
+  - description: The web port of the OpenShift Service exposed for the WEB Explorer.
+    displayName: H2 web port
+    name: WEB_PORT
+    value: "8082"
+  - description: The name of the OpenShift web Service exposed for the WEB Explorer.
+    displayName: Explorer web Service Name
+    name: ELF_WEB_SERVICE_NAME
+    value: elfinderweb-service
+  - description: Maximum amount of memory the container can use.
+    displayName: Memory Limit
+    name: MEMORY_LIMIT
+    value: 512Mi
+  - description: Name of the ImageStreamTag to be used for the H2 image.
+    displayName: Elfinder ImageStreamTag
+    name: ELF_IMAGE_STREAM_TAG
+    value: elfinder-java:0.0.1-SNAPSHOT
+  - description: Login to access to the web UI.
+    displayName: Web Login
+    name: UI_LOGIN
+    value: admin
+  - description: Password to access to the web UI.
+    displayName: Web Password
+    name: UI_PASSWORD
+    value: secret
+

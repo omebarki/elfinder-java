@@ -9,7 +9,7 @@
     <volume>
         <source>filesystem</source>
         <alias>/</alias>
-        <path>/</path>
+        <path>/PVC_DATA</path>
         <locale>en_US</locale>
         <constraint>
             <locked>false</locked>
