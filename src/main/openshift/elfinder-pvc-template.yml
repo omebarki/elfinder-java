@@ -35,17 +35,17 @@ objects:
     metadata:
       annotations:
         template.alpha.openshift.io/wait-for-ready: 'true'
-      name: "${ELF_SERVICE_NAME}"
+      name: "${ELF_WEB_SERVICE_NAME}"
     spec:
       replicas: 1
       selector:
-        name: "${ELF_SERVICE_NAME}"
+        name: "${ELF_WEB_SERVICE_NAME}"
       strategy:
         type: Recreate
       template:
         metadata:
           labels:
-            name: "${ELF_SERVICE_NAME}"
+            name: "${ELF_WEB_SERVICE_NAME}"
         spec:
           containers:
             - capabilities: {}
@@ -81,11 +81,11 @@ objects:
               terminationMessagePath: "/dev/termination-log"
               volumeMounts:
                 - mountPath: "/PVC_DATA"
-                  name: "${ELF_SERVICE_NAME}-data"
+                  name: "${ELF_WEB_SERVICE_NAME}-data"
           dnsPolicy: ClusterFirst
           restartPolicy: Always
           volumes:
-            - name: "${ELF_SERVICE_NAME}-data"
+            - name: "${ELF_WEB_SERVICE_NAME}-data"
               persistentVolumeClaim:
                 claimName: "${PVC_NAME}"
       triggers:
@@ -113,7 +113,7 @@ objects:
           protocol: TCP
           targetPort: ${{WEB_PORT}}
       selector:
-        name: "${ELF_SERVICE_NAME}"
+        name: "${ELF_WEB_SERVICE_NAME}"
       sessionAffinity: None
       type: ClusterIP
 
@@ -122,12 +122,8 @@ parameters:
     displayName: Nom du PVC
     name: PVC_NAME
     value: yki-pvc
-  - description: The name of the OpenShift Service exposed for the WEB Explorer.
-    displayName: H2 Service Name
-    name: ELF_SERVICE_NAME
-    value: elfinder-service
   - description: The web port of the OpenShift Service exposed for the WEB Explorer.
-    displayName: H2 web port
+    displayName: Web port
     name: WEB_PORT
     value: "8082"
   - description: The name of the OpenShift web Service exposed for the WEB Explorer.
